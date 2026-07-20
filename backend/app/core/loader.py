@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import io
+import re
 from datetime import datetime
 from typing import Any
 
 import pandas as pd
+
+# Quant Engine / ISO exports: YYYY-MM-DD HH:MM:SS (must not use dayfirst=True).
+_ISO_DATETIME = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{1,2}:\d{2}(:\d{2})?")
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 from app.core.aliases import (
     FIELD_ALIASES,
@@ -73,10 +78,18 @@ def _parse_datetime(value: Any) -> datetime | None:
             return None
         return value.to_pydatetime()
     s = str(value).strip()
-    # Prefer day-first when ambiguous (common in Indian trade exports)
-    ts = pd.to_datetime(s, errors="coerce", dayfirst=True)
-    if pd.isna(ts):
-        ts = pd.to_datetime(s, errors="coerce", dayfirst=False)
+    if _ISO_DATETIME.match(s):
+        normalized = s.replace("T", " ")
+        ts = pd.to_datetime(normalized, format="%Y-%m-%d %H:%M:%S", errors="coerce")
+        if pd.isna(ts):
+            ts = pd.to_datetime(normalized, errors="coerce", dayfirst=False)
+    elif _ISO_DATE.match(s):
+        ts = pd.to_datetime(s, format="%Y-%m-%d", errors="coerce")
+    else:
+        # DD/MM/YYYY-style exports; avoid dayfirst on ISO strings (swaps month/day).
+        ts = pd.to_datetime(s, errors="coerce", dayfirst=True)
+        if pd.isna(ts):
+            ts = pd.to_datetime(s, errors="coerce", dayfirst=False)
     if pd.isna(ts):
         return None
     return ts.to_pydatetime()

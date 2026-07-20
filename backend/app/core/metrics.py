@@ -95,14 +95,14 @@ def compute_analysis(
     daily = df.groupby("trade_date")["pnl"].sum().sort_index()
     total_days = len(daily)
     profit_days = int((daily > 0).sum())
-    loss_days = int((daily <= 0).sum())
+    loss_days = int((daily < 0).sum())
     profit_days_pct = round(profit_days / total_days * 100, 2) if total_days else 0.0
 
     avg_profit_on_profit_days = (
         round(float(daily[daily > 0].mean()), 2) if profit_days else 0.0
     )
     avg_loss_on_loss_days = (
-        round(float(daily[daily <= 0].mean()), 2) if loss_days else 0.0
+        round(float(daily[daily < 0].mean()), 2) if loss_days else 0.0
     )
 
     equity = daily.cumsum()
