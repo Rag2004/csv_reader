@@ -76,6 +76,9 @@ def compute_analysis(
     )
     df["entry_time"] = pd.to_datetime(df["entry_time"], errors="coerce")
     df = df.dropna(subset=["entry_time"])
+    # Drop timezone so Period conversion stays quiet
+    if getattr(df["entry_time"].dt, "tz", None) is not None:
+        df["entry_time"] = df["entry_time"].dt.tz_localize(None)
     df["trade_date"] = df["entry_time"].dt.date
 
     total_trades = len(df)

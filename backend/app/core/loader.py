@@ -72,7 +72,11 @@ def _parse_datetime(value: Any) -> datetime | None:
         if pd.isna(value):
             return None
         return value.to_pydatetime()
-    ts = pd.to_datetime(value, errors="coerce")
+    s = str(value).strip()
+    # Prefer day-first when ambiguous (common in Indian trade exports)
+    ts = pd.to_datetime(s, errors="coerce", dayfirst=True)
+    if pd.isna(ts):
+        ts = pd.to_datetime(s, errors="coerce", dayfirst=False)
     if pd.isna(ts):
         return None
     return ts.to_pydatetime()

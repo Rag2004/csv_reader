@@ -23,24 +23,40 @@ from app.schemas.responses import UploadResponse
 router = APIRouter(tags=["upload"])
 
 
+def _safe_parent(path: Path, index: int) -> Path | None:
+    try:
+        return path.parents[index]
+    except IndexError:
+        return None
+
+
 def _allowlist_roots() -> list[Path]:
-    """Roots permitted for load-path / browse (module-local + repo results)."""
+    """Roots permitted for load-path / browse (works in monorepo and Docker)."""
     here = Path(__file__).resolve()
-    module_root = here.parents[3]
-    repo_root = here.parents[4]
-    roots = [
-        module_root / "samples",
-        module_root,
-        repo_root / "results",
-        repo_root,
+    # Docker: /app/app/api/upload.py → /app ; monorepo: …/csv_reader/backend/app/api/upload.py → csv_reader
+    app_root = _safe_parent(here, 2)  # …/backend or /app
+    module_root = _safe_parent(here, 3)  # …/csv_reader (monorepo only)
+    repo_root = _safe_parent(here, 4)  # Quant_engine (monorepo only)
+
+    roots: list[Path] = [
         Path.cwd(),
+        Path.cwd() / "samples",
         Path.cwd() / "results",
-        Path.cwd() / "csv_reader" / "samples",
+        Path("/app/samples"),  # Docker image COPY samples
+        Path("/app"),
     ]
+    if app_root is not None:
+        roots.extend([app_root, app_root / "samples", app_root / "results"])
+    if module_root is not None:
+        roots.extend([module_root, module_root / "samples", module_root / "results"])
+    if repo_root is not None:
+        roots.extend([repo_root, repo_root / "results", repo_root / "csv_reader" / "samples"])
+
     extra = os.environ.get("CSV_READER_ALLOW_ROOTS", "")
     for part in extra.split(os.pathsep):
         if part.strip():
             roots.append(Path(part.strip()))
+
     out: list[Path] = []
     seen: set[str] = set()
     for r in roots:
@@ -134,23 +150,15 @@ def _resolve_load_path(raw: str) -> Path:
         return path
     candidates = [
         Path.cwd() / path,
-        Path.cwd().parent / path,
+        Path.cwd() / "samples" / path.name,
+        Path("/app/samples") / path.name,
+        Path("/app") / path,
     ]
-    here = Path(__file__).resolve()
-    module_root = here.parents[3]
-    repo_root = here.parents[4]
-    candidates.extend(
-        [
-            module_root / path,
-            module_root / "samples" / path.name,
-            repo_root / path,
-            repo_root / "results" / path,
-            repo_root / "results" / path.name,
-        ]
-    )
     for root in _allowlist_roots():
         candidates.append(root / path)
         candidates.append(root / path.name)
+        candidates.append(root / "samples" / path.name)
+        candidates.append(root / "results" / path.name)
     for c in candidates:
         if c.exists() and c.is_file():
             return c
