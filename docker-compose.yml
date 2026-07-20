@@ -1,0 +1,12 @@
+services:
+  csv-reader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      CSV_READER_STATIC: /app/static
+      # Optional: comma-separated extra CORS origins if UI is reverse-proxied elsewhere
+      # CSV_READER_CORS_ORIGINS: https://csv.example.com
+    restart: unless-stopped

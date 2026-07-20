@@ -1,0 +1,8 @@
+# Ignore local deps / build artifacts; samples and source are included in image via Dockerfile COPY
+**/node_modules
+**/__pycache__
+**/*.pyc
+frontend/dist
+backend/static
+.venv
+.env
