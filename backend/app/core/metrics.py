@@ -44,6 +44,7 @@ def compute_analysis(
     original_headers: list[str],
     column_map: dict[str, str],
     loaded_at: datetime | None = None,
+    slippage_pct: float = 0.0,
 ) -> AnalysisBundle:
     """Compute full analysis bundle once after upload."""
     loaded_at = loaded_at or datetime.utcnow()
@@ -55,6 +56,7 @@ def compute_analysis(
             original_headers=original_headers,
             column_map=column_map,
             loaded_at=loaded_at,
+            slippage_pct=slippage_pct,
         )
         return AnalysisBundle(
             meta=meta,
@@ -226,6 +228,7 @@ def compute_analysis(
         original_headers=original_headers,
         column_map=column_map,
         loaded_at=loaded_at,
+        slippage_pct=slippage_pct,
     )
 
     return AnalysisBundle(

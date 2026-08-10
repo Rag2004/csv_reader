@@ -1,0 +1,41 @@
+Metric,Formula
+Total PnL,sum(pnl of all trades)
+Total Trades,count(trades)
+Win Trades,count(pnl > 0)
+Loss Trades,count(pnl <= 0)
+Win Rate (%),(win_trades / total_trades) * 100
+Avg Win,mean(pnl where pnl > 0)
+Avg Loss,mean(pnl where pnl <= 0)
+Avg PnL per Trade,total_pnl / total_trades
+Risk Reward,abs(avg_win / avg_loss)
+Expectancy,(win_frac * avg_win) + (loss_frac * avg_loss)
+Gross Wins,sum(pnl where pnl > 0)
+Gross Losses,abs(sum(pnl where pnl <= 0))
+Profit Factor,gross_wins / gross_losses
+Daily PnL,groupby(trade_date).sum(pnl)
+Total Days,count(unique trade_dates)
+Profit Days,count(daily_pnl > 0)
+Loss Days,count(daily_pnl < 0)
+Profit Days %,(profit_days / total_days) * 100
+Avg Profit on Profit Days,mean(daily_pnl where daily_pnl > 0)
+Avg Loss on Loss Days,mean(daily_pnl where daily_pnl < 0)
+Equity Curve,cumsum(daily_pnl)
+Drawdown (series),equity - cummax(equity)
+Max Drawdown,min(drawdown series)
+Top-5 DD Avg,mean(5 most negative drawdown point values)
+Top-5 Loss Day Avg,mean(5 most negative daily_pnl values)
+Calmar,abs(total_pnl / max_drawdown)
+Recovery Factor,abs(total_pnl / max_drawdown)
+Monthly PnL,groupby(year-month).sum(pnl)
+Total Months,count(months with >=1 trade)
+Avg Monthly,mean(monthly_pnl)
+Median Monthly,median(monthly_pnl)
+Sortino,avg_monthly / std(negative monthly_pnl )
+Avg Weekly,mean(groupby(ISO week number).sum(pnl))
+Mean Daily,mean(daily_pnl)
+Std Dev (daily),std(daily_pnl )
+Mean / Std,mean_daily / std_dev
+Sharpe,(mean_daily / std_dev) * sqrt(252)
+SQN,sqrt(N) * (avg_pnl_per_trade / std(trade_pnl ))
+Monthly heatmap cell,sum(pnl) for trades in that year+month
+Grand Total (monthly),total_pnl

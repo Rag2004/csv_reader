@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react';
-import { fetchOverview } from '../api/client';
+import { fetchMonthly, fetchOverview } from '../api/client';
 import EmptyState from '../components/EmptyState';
 import KpiCard from '../components/KpiCard';
+import MonthlyHeatmap from '../components/MonthlyHeatmap';
 import { fmtInt, fmtNumber, fmtPct, pnlClass } from '../utils/format';
 
 export default function Overview({ hasSession }) {
   const [data, setData] = useState(null);
+  const [monthly, setMonthly] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!hasSession) {
       setData(null);
+      setMonthly(null);
       return;
     }
-    fetchOverview()
-      .then(setData)
+    Promise.all([fetchOverview(), fetchMonthly()])
+      .then(([overview, monthlyData]) => {
+        setData(overview);
+        setMonthly(monthlyData);
+      })
       .catch((e) => setError(e.message));
   }, [hasSession]);
 
@@ -101,6 +107,15 @@ export default function Overview({ hasSession }) {
             ['SQN', fmtNumber(data.sqn)],
           ]}
         />
+      </div>
+
+      <div className="panel" style={{ marginTop: '1.25rem' }}>
+        <h2>Monthly P&amp;L</h2>
+        {monthly ? (
+          <MonthlyHeatmap years={monthly.years} grandTotal={monthly.grand_total} />
+        ) : (
+          <p style={{ color: 'var(--text-muted)' }}>Loading monthly…</p>
+        )}
       </div>
     </div>
   );

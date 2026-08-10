@@ -22,9 +22,10 @@ export async function fetchMeta() {
   return res.json();
 }
 
-export async function uploadCsv(file) {
+export async function uploadCsv(file, { slippage_pct = 0 } = {}) {
   const form = new FormData();
   form.append('file', file);
+  form.append('slippage_pct', String(slippage_pct ?? 0));
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
     ...defaultFetch,
@@ -34,12 +35,12 @@ export async function uploadCsv(file) {
   return res.json();
 }
 
-export async function loadPath(path) {
+export async function loadPath(path, { slippage_pct = 0 } = {}) {
   const res = await fetch(`${API_BASE}/api/load-path`, {
     method: 'POST',
     ...defaultFetch,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path }),
+    body: JSON.stringify({ path, slippage_pct: Number(slippage_pct) || 0 }),
   });
   if (!res.ok) await parseError(res);
   return res.json();

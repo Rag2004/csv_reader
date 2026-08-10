@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
 from app.core.cookies import (
@@ -17,6 +17,7 @@ from app.core.cookies import (
 )
 from app.core.loader import CSVLoadError, load_csv_bytes, load_csv_path
 from app.core.metrics import compute_analysis
+from app.core.slippage import apply_slippage_pct
 from app.core import session as session_store
 from app.schemas.responses import UploadResponse
 
@@ -77,6 +78,13 @@ def _is_allowed_path(path: Path) -> bool:
         resolved = path.resolve()
     except OSError:
         return False
+    # Allow selecting a run directory that contains run_manifest.json + trades.csv
+    if resolved.is_dir() and (resolved / "run_manifest.json").is_file():
+        trades = resolved / "trades.csv"
+        if trades.is_file():
+            resolved = trades.resolve()
+        else:
+            return False
     if not resolved.is_file() or resolved.suffix.lower() != ".csv":
         return False
     for root in _allowlist_roots():
@@ -92,11 +100,26 @@ def _is_allowed_path(path: Path) -> bool:
 
 class LoadPathRequest(BaseModel):
     path: str = Field(..., description="Absolute or relative path under allowlisted roots")
+    slippage_pct: float = Field(
+        0.0,
+        ge=0.0,
+        le=100.0,
+        description="Percent of |PnL| deducted per trade (0–100)",
+    )
 
 
 class BrowseResponse(BaseModel):
     roots: list[str]
     files: list[dict]
+
+
+def _validate_slippage_pct(slippage_pct: float) -> float:
+    if slippage_pct < 0 or slippage_pct > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="slippage_pct must be between 0 and 100 inclusive",
+        )
+    return float(slippage_pct)
 
 
 def _store_and_respond(
@@ -106,14 +129,20 @@ def _store_and_respond(
     filename: str,
     headers: list[str],
     column_map: dict[str, str],
+    slippage_pct: float = 0.0,
 ) -> UploadResponse:
     session_id = resolve_or_create_session_id(request)
+    try:
+        adjusted = apply_slippage_pct(trades, slippage_pct)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     bundle = compute_analysis(
-        trades,
+        adjusted,
         filename=filename,
         original_headers=headers,
         column_map=column_map,
         loaded_at=datetime.utcnow(),
+        slippage_pct=slippage_pct,
     )
     session_store.set_bundle(session_id, bundle)
     set_session_cookie(response, session_id)
@@ -125,9 +154,12 @@ async def upload_csv(
     request: Request,
     response: Response,
     file: UploadFile = File(...),
+    slippage_pct: float = Form(0.0),
 ):
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file.")
+
+    slippage_pct = _validate_slippage_pct(slippage_pct)
 
     data = await file.read()
     if not data:
@@ -141,7 +173,15 @@ async def upload_csv(
             detail={"message": exc.message, "headers_seen": exc.headers_seen},
         ) from exc
 
-    return _store_and_respond(response, request, trades, file.filename, headers, column_map)
+    return _store_and_respond(
+        response,
+        request,
+        trades,
+        file.filename,
+        headers,
+        column_map,
+        slippage_pct=slippage_pct,
+    )
 
 
 def _resolve_load_path(raw: str) -> Path:
@@ -171,7 +211,14 @@ async def load_path(
     request: Request,
     response: Response,
 ):
-    path = _resolve_load_path(body.path)
+    from app.core.manifest import resolve_trades_path
+
+    raw = Path(body.path)
+    if raw.exists() and raw.is_dir():
+        path, _manifest = resolve_trades_path(raw)
+    else:
+        path = _resolve_load_path(body.path)
+        path, _manifest = resolve_trades_path(path)
 
     if not _is_allowed_path(path):
         raise HTTPException(
@@ -190,7 +237,15 @@ async def load_path(
             detail={"message": exc.message, "headers_seen": exc.headers_seen},
         ) from exc
 
-    return _store_and_respond(response, request, trades, filename, headers, column_map)
+    return _store_and_respond(
+        response,
+        request,
+        trades,
+        filename,
+        headers,
+        column_map,
+        slippage_pct=body.slippage_pct,
+    )
 
 
 @router.get("/browse", response_model=BrowseResponse)
@@ -204,14 +259,17 @@ async def browse_files():
             continue
         roots_out.append(str(root))
         for p in sorted(root.rglob("*.csv")):
-            files.append(
-                {
-                    "path": str(p),
-                    "name": p.name,
-                    "folder": p.parent.name,
-                    "size": p.stat().st_size,
-                }
-            )
+            item = {
+                "path": str(p),
+                "name": p.name,
+                "folder": p.parent.name,
+                "size": p.stat().st_size,
+            }
+            manifest = p.parent / "run_manifest.json"
+            if p.name == "trades.csv" and manifest.is_file():
+                item["has_manifest"] = True
+                item["run_dir"] = str(p.parent)
+            files.append(item)
     files = files[:500]
     return BrowseResponse(roots=roots_out, files=files)
 

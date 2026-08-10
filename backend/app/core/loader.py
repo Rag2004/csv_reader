@@ -213,10 +213,17 @@ def load_csv_bytes(data: bytes, filename: str = "upload.csv") -> tuple[list[Norm
 
 
 def load_csv_path(path: str) -> tuple[list[NormalizedTrade], dict[str, str], list[str], str]:
-    """Load from filesystem path. Returns trades, column_map, headers, filename."""
+    """Load from filesystem path. Returns trades, column_map, headers, filename.
+
+    If `path` points at a canonical run folder (or a file inside one) that has
+    `run_manifest.json`, prefer the manifest's trades artifact.
+    """
     from pathlib import Path
 
-    p = Path(path)
+    from app.core.manifest import resolve_trades_path
+
+    requested = Path(path)
+    p, _manifest = resolve_trades_path(requested)
     if not p.is_file():
         raise CSVLoadError(f"File not found: {path}")
     if p.suffix.lower() != ".csv":

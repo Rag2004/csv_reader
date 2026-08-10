@@ -15,3 +15,4 @@ class SessionMeta(BaseModel):
     original_headers: list[str] = Field(default_factory=list)
     column_map: dict[str, str] = Field(default_factory=dict)
     loaded_at: datetime
+    slippage_pct: float = 0.0

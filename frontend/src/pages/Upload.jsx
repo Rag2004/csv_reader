@@ -16,12 +16,21 @@ export default function Upload({ meta, onLoaded, onCleared }) {
   const [browse, setBrowse] = useState(null);
   const [pathInput, setPathInput] = useState('');
   const [lastUpload, setLastUpload] = useState(null);
+  const [slippagePct, setSlippagePct] = useState(0);
 
   useEffect(() => {
     browseFiles()
       .then(setBrowse)
       .catch(() => setBrowse({ files: [], roots: [] }));
   }, []);
+
+  const parseSlippage = () => {
+    const n = Number(slippagePct);
+    if (Number.isNaN(n) || n < 0 || n > 100) {
+      throw new Error('Slippage % must be between 0 and 100');
+    }
+    return n;
+  };
 
   const handleFile = useCallback(
     async (file) => {
@@ -30,7 +39,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
       setError(null);
       setSuccess(null);
       try {
-        const data = await uploadCsv(file);
+        const pct = parseSlippage();
+        const data = await uploadCsv(file, { slippage_pct: pct });
         setLastUpload(data);
         setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
         onLoaded?.(data.meta);
@@ -40,7 +50,7 @@ export default function Upload({ meta, onLoaded, onCleared }) {
         setBusy(false);
       }
     },
-    [onLoaded],
+    [onLoaded, slippagePct],
   );
 
   const handlePath = async (path) => {
@@ -49,7 +59,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
     setError(null);
     setSuccess(null);
     try {
-      const data = await loadPath(path.trim());
+      const pct = parseSlippage();
+      const data = await loadPath(path.trim(), { slippage_pct: pct });
       setLastUpload(data);
       setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
       onLoaded?.(data.meta);
@@ -78,6 +89,27 @@ export default function Upload({ meta, onLoaded, onCleared }) {
 
       {error && <div className="error-box">{error}</div>}
       {success && <div className="success-box">{success}</div>}
+
+      <div className="panel">
+        <h2>Costs</h2>
+        <div className="filters">
+          <label style={{ maxWidth: '12rem' }}>
+            Slippage %
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={slippagePct}
+              onChange={(e) => setSlippagePct(e.target.value)}
+              disabled={busy}
+            />
+          </label>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>
+            Per trade: adjusted PnL = PnL − |PnL| × (slippage % / 100). Applied on upload / load.
+          </p>
+        </div>
+      </div>
 
       <div className="panel">
         <h2>File upload</h2>
@@ -166,6 +198,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
             <dd>
               {displayMeta.start_date || '—'} → {displayMeta.end_date || '—'}
             </dd>
+            <dt>Slippage %</dt>
+            <dd>{fmtNumber(displayMeta.slippage_pct ?? 0, 1)}</dd>
           </dl>
 
           <h2 style={{ marginTop: '1.25rem' }}>Detected column map</h2>
