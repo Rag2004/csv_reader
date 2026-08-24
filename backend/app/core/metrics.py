@@ -45,6 +45,7 @@ def compute_analysis(
     column_map: dict[str, str],
     loaded_at: datetime | None = None,
     slippage_pct: float = 0.0,
+    charge_per_trade: float = 0.0,
 ) -> AnalysisBundle:
     """Compute full analysis bundle once after upload."""
     loaded_at = loaded_at or datetime.utcnow()
@@ -57,6 +58,7 @@ def compute_analysis(
             column_map=column_map,
             loaded_at=loaded_at,
             slippage_pct=slippage_pct,
+            charge_per_trade=charge_per_trade,
         )
         return AnalysisBundle(
             meta=meta,
@@ -229,6 +231,7 @@ def compute_analysis(
         column_map=column_map,
         loaded_at=loaded_at,
         slippage_pct=slippage_pct,
+        charge_per_trade=charge_per_trade,
     )
 
     return AnalysisBundle(

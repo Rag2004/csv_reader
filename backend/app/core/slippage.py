@@ -9,11 +9,12 @@ def apply_slippage_pct(
     trades: list[NormalizedTrade],
     pct: float,
 ) -> list[NormalizedTrade]:
-    """Reduce each trade's PnL by abs(pnl) * (pct / 100).
+    """Reduce each trade's PnL by abs(original_pnl) * (pct / 100).
 
-    adjusted_pnl = pnl - abs(pnl) * (pct / 100)
+    adjusted_pnl = pnl - abs(raw_pnl) * (pct / 100)
 
-    No-op when pct == 0. When pct > 0, original pnl is stored in extras["raw_pnl"].
+    Uses extras["raw_pnl"] when present (CSV original); otherwise current pnl.
+    No-op when pct == 0. Does not overwrite extras["raw_pnl"] if already set.
     """
     if pct == 0:
         return trades
@@ -23,9 +24,12 @@ def apply_slippage_pct(
     factor = pct / 100.0
     out: list[NormalizedTrade] = []
     for t in trades:
-        raw = t.pnl
-        adjusted = raw - abs(raw) * factor
         extras = dict(t.extras or {})
-        extras["raw_pnl"] = raw
+        if "raw_pnl" in extras:
+            raw = float(extras["raw_pnl"])
+        else:
+            raw = t.pnl
+            extras["raw_pnl"] = raw
+        adjusted = t.pnl - abs(raw) * factor
         out.append(t.model_copy(update={"pnl": adjusted, "extras": extras}))
     return out

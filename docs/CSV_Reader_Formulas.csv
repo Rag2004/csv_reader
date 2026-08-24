@@ -39,3 +39,6 @@ Sharpe,(mean_daily / std_dev) * sqrt(252)
 SQN,sqrt(N) * (avg_pnl_per_trade / std(trade_pnl ))
 Monthly heatmap cell,sum(pnl) for trades in that year+month
 Grand Total (monthly),total_pnl
+Per-trade charge,net_pnl = raw_pnl - charge_per_trade (flat Rs per closed trade; applied on upload)
+Slippage %,"net_pnl = pnl - |raw_pnl| * (slippage_pct / 100) (raw_pnl = CSV original; applied after charge)"
+Combined costs,"net_pnl = raw_pnl - charge_per_trade - |raw_pnl| * (slippage_pct / 100)"

@@ -17,6 +17,7 @@ from app.core.cookies import (
 )
 from app.core.loader import CSVLoadError, load_csv_bytes, load_csv_path
 from app.core.metrics import compute_analysis
+from app.core.charges import apply_charge_per_trade
 from app.core.slippage import apply_slippage_pct
 from app.core import session as session_store
 from app.schemas.responses import UploadResponse
@@ -106,6 +107,11 @@ class LoadPathRequest(BaseModel):
         le=100.0,
         description="Percent of |PnL| deducted per trade (0–100)",
     )
+    charge_per_trade: float = Field(
+        0.0,
+        ge=0.0,
+        description="Flat ₹ deducted from each trade's PnL",
+    )
 
 
 class BrowseResponse(BaseModel):
@@ -122,6 +128,15 @@ def _validate_slippage_pct(slippage_pct: float) -> float:
     return float(slippage_pct)
 
 
+def _validate_charge_per_trade(charge_per_trade: float) -> float:
+    if charge_per_trade < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="charge_per_trade must be >= 0",
+        )
+    return float(charge_per_trade)
+
+
 def _store_and_respond(
     response: Response,
     request: Request,
@@ -130,10 +145,12 @@ def _store_and_respond(
     headers: list[str],
     column_map: dict[str, str],
     slippage_pct: float = 0.0,
+    charge_per_trade: float = 0.0,
 ) -> UploadResponse:
     session_id = resolve_or_create_session_id(request)
     try:
-        adjusted = apply_slippage_pct(trades, slippage_pct)
+        adjusted = apply_charge_per_trade(trades, charge_per_trade)
+        adjusted = apply_slippage_pct(adjusted, slippage_pct)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     bundle = compute_analysis(
@@ -143,6 +160,7 @@ def _store_and_respond(
         column_map=column_map,
         loaded_at=datetime.utcnow(),
         slippage_pct=slippage_pct,
+        charge_per_trade=charge_per_trade,
     )
     session_store.set_bundle(session_id, bundle)
     set_session_cookie(response, session_id)
@@ -155,11 +173,13 @@ async def upload_csv(
     response: Response,
     file: UploadFile = File(...),
     slippage_pct: float = Form(0.0),
+    charge_per_trade: float = Form(0.0),
 ):
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file.")
 
     slippage_pct = _validate_slippage_pct(slippage_pct)
+    charge_per_trade = _validate_charge_per_trade(charge_per_trade)
 
     data = await file.read()
     if not data:
@@ -181,6 +201,7 @@ async def upload_csv(
         headers,
         column_map,
         slippage_pct=slippage_pct,
+        charge_per_trade=charge_per_trade,
     )
 
 
@@ -245,6 +266,7 @@ async def load_path(
         headers,
         column_map,
         slippage_pct=body.slippage_pct,
+        charge_per_trade=body.charge_per_trade,
     )
 
 

@@ -17,6 +17,7 @@ export default function Upload({ meta, onLoaded, onCleared }) {
   const [pathInput, setPathInput] = useState('');
   const [lastUpload, setLastUpload] = useState(null);
   const [slippagePct, setSlippagePct] = useState(0);
+  const [chargePerTrade, setChargePerTrade] = useState(0);
 
   useEffect(() => {
     browseFiles()
@@ -24,12 +25,16 @@ export default function Upload({ meta, onLoaded, onCleared }) {
       .catch(() => setBrowse({ files: [], roots: [] }));
   }, []);
 
-  const parseSlippage = () => {
-    const n = Number(slippagePct);
-    if (Number.isNaN(n) || n < 0 || n > 100) {
+  const parseCosts = () => {
+    const pct = Number(slippagePct);
+    if (Number.isNaN(pct) || pct < 0 || pct > 100) {
       throw new Error('Slippage % must be between 0 and 100');
     }
-    return n;
+    const charge = Number(chargePerTrade);
+    if (Number.isNaN(charge) || charge < 0) {
+      throw new Error('Charge ₹ / trade must be 0 or greater');
+    }
+    return { slippage_pct: pct, charge_per_trade: charge };
   };
 
   const handleFile = useCallback(
@@ -39,8 +44,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
       setError(null);
       setSuccess(null);
       try {
-        const pct = parseSlippage();
-        const data = await uploadCsv(file, { slippage_pct: pct });
+        const costs = parseCosts();
+        const data = await uploadCsv(file, costs);
         setLastUpload(data);
         setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
         onLoaded?.(data.meta);
@@ -50,7 +55,7 @@ export default function Upload({ meta, onLoaded, onCleared }) {
         setBusy(false);
       }
     },
-    [onLoaded, slippagePct],
+    [onLoaded, slippagePct, chargePerTrade],
   );
 
   const handlePath = async (path) => {
@@ -59,8 +64,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
     setError(null);
     setSuccess(null);
     try {
-      const pct = parseSlippage();
-      const data = await loadPath(path.trim(), { slippage_pct: pct });
+      const costs = parseCosts();
+      const data = await loadPath(path.trim(), costs);
       setLastUpload(data);
       setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
       onLoaded?.(data.meta);
@@ -94,6 +99,17 @@ export default function Upload({ meta, onLoaded, onCleared }) {
         <h2>Costs</h2>
         <div className="filters">
           <label style={{ maxWidth: '12rem' }}>
+            Charge ₹ / trade
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              value={chargePerTrade}
+              onChange={(e) => setChargePerTrade(e.target.value)}
+              disabled={busy}
+            />
+          </label>
+          <label style={{ maxWidth: '12rem' }}>
             Slippage %
             <input
               type="number"
@@ -106,7 +122,7 @@ export default function Upload({ meta, onLoaded, onCleared }) {
             />
           </label>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>
-            Per trade: adjusted PnL = PnL − |PnL| × (slippage % / 100). Applied on upload / load.
+            Per trade: net PnL = PnL − charge − |PnL| × (slippage % / 100). Applied on upload / load.
           </p>
         </div>
       </div>
@@ -198,6 +214,8 @@ export default function Upload({ meta, onLoaded, onCleared }) {
             <dd>
               {displayMeta.start_date || '—'} → {displayMeta.end_date || '—'}
             </dd>
+            <dt>Charge ₹ / trade</dt>
+            <dd>{fmtNumber(displayMeta.charge_per_trade ?? 0, 2)}</dd>
             <dt>Slippage %</dt>
             <dd>{fmtNumber(displayMeta.slippage_pct ?? 0, 1)}</dd>
           </dl>
