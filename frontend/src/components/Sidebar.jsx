@@ -1,6 +1,14 @@
 import { NavLink } from 'react-router-dom';
+import CostDefaults from './CostDefaults';
 
-export default function Sidebar({ meta }) {
+export default function Sidebar({
+  meta,
+  slippagePct,
+  chargePerTrade,
+  onSlippageChange,
+  onChargeChange,
+  onPersistCosts,
+}) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">Quant Tools</div>
@@ -22,6 +30,13 @@ export default function Sidebar({ meta }) {
           Trades
         </NavLink>
       </nav>
+      <CostDefaults
+        slippagePct={slippagePct}
+        chargePerTrade={chargePerTrade}
+        onSlippageChange={onSlippageChange}
+        onChargeChange={onChargeChange}
+        onPersist={onPersistCosts}
+      />
       <div className="session-chip">
         {meta ? (
           <>

@@ -8,7 +8,7 @@ import {
 } from '../api/client';
 import { fmtInt, fmtNumber } from '../utils/format';
 
-export default function Upload({ meta, onLoaded, onCleared }) {
+export default function Upload({ meta, onLoaded, onCleared, slippagePct, chargePerTrade }) {
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -16,8 +16,6 @@ export default function Upload({ meta, onLoaded, onCleared }) {
   const [browse, setBrowse] = useState(null);
   const [pathInput, setPathInput] = useState('');
   const [lastUpload, setLastUpload] = useState(null);
-  const [slippagePct, setSlippagePct] = useState(0);
-  const [chargePerTrade, setChargePerTrade] = useState(0);
 
   useEffect(() => {
     browseFiles()
@@ -94,38 +92,6 @@ export default function Upload({ meta, onLoaded, onCleared }) {
 
       {error && <div className="error-box">{error}</div>}
       {success && <div className="success-box">{success}</div>}
-
-      <div className="panel">
-        <h2>Costs</h2>
-        <div className="filters">
-          <label style={{ maxWidth: '12rem' }}>
-            Charge ₹ / trade
-            <input
-              type="number"
-              min={0}
-              step={0.01}
-              value={chargePerTrade}
-              onChange={(e) => setChargePerTrade(e.target.value)}
-              disabled={busy}
-            />
-          </label>
-          <label style={{ maxWidth: '12rem' }}>
-            Slippage %
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step={0.1}
-              value={slippagePct}
-              onChange={(e) => setSlippagePct(e.target.value)}
-              disabled={busy}
-            />
-          </label>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 0' }}>
-            Per trade: net PnL = PnL − charge − |PnL| × (slippage % / 100). Applied on upload / load.
-          </p>
-        </div>
-      </div>
 
       <div className="panel">
         <h2>File upload</h2>

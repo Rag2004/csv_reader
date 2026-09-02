@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { fetchMeta } from './api/client';
 import Sidebar from './components/Sidebar';
+import { loadCostDefaults, saveCostDefaults } from './utils/costDefaults';
 import Upload from './pages/Upload';
 import Overview from './pages/Overview';
 import Equity from './pages/Equity';
@@ -10,6 +11,22 @@ import Trades from './pages/Trades';
 
 function AppShell() {
   const [meta, setMeta] = useState(null);
+  const [costDefaults, setCostDefaults] = useState(() => loadCostDefaults());
+
+  const updateCostDefaults = useCallback((patch) => {
+    setCostDefaults((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const persistCostDefaults = useCallback(() => {
+    setCostDefaults((prev) => {
+      const normalized = {
+        slippage_pct: Number(prev.slippage_pct) || 0,
+        charge_per_trade: Number(prev.charge_per_trade) || 0,
+      };
+      saveCostDefaults(normalized);
+      return normalized;
+    });
+  }, []);
 
   const refreshMeta = useCallback(() => {
     fetchMeta()
@@ -25,7 +42,14 @@ function AppShell() {
 
   return (
     <div className="app">
-      <Sidebar meta={meta} />
+      <Sidebar
+        meta={meta}
+        slippagePct={costDefaults.slippage_pct}
+        chargePerTrade={costDefaults.charge_per_trade}
+        onSlippageChange={(value) => updateCostDefaults({ slippage_pct: value })}
+        onChargeChange={(value) => updateCostDefaults({ charge_per_trade: value })}
+        onPersistCosts={persistCostDefaults}
+      />
       <main className="main">
         <Routes>
           <Route path="/" element={<Navigate to="/upload" replace />} />
@@ -34,6 +58,8 @@ function AppShell() {
             element={
               <Upload
                 meta={meta}
+                slippagePct={costDefaults.slippage_pct}
+                chargePerTrade={costDefaults.charge_per_trade}
                 onLoaded={(m) => setMeta(m)}
                 onCleared={() => setMeta(null)}
               />
