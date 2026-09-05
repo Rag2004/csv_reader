@@ -105,7 +105,7 @@ class LoadPathRequest(BaseModel):
         0.0,
         ge=0.0,
         le=100.0,
-        description="Percent of |PnL| deducted per trade (0–100)",
+        description="Adverse % applied to entry/exit prices by side (0–100); skipped if prices/side/qty missing",
     )
     charge_per_trade: float = Field(
         0.0,
@@ -149,8 +149,8 @@ def _store_and_respond(
 ) -> UploadResponse:
     session_id = resolve_or_create_session_id(request)
     try:
-        adjusted = apply_charge_per_trade(trades, charge_per_trade)
-        adjusted = apply_slippage_pct(adjusted, slippage_pct)
+        adjusted = apply_slippage_pct(trades, slippage_pct)
+        adjusted = apply_charge_per_trade(adjusted, charge_per_trade)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     bundle = compute_analysis(

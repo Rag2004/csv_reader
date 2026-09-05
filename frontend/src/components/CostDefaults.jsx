@@ -35,7 +35,9 @@ export default function CostDefaults({
         />
       </label>
       <p className="cost-defaults-hint">
-        Saved on blur. Used on every upload / path load until you change them.
+        Slippage worsens fills: buy entry +% / exit −%; sell entry −% / exit +%. Needs
+        entry/exit price, side, and qty (else skipped). Then flat charge. Saved on blur;
+        used on every upload / path load.
       </p>
     </div>
   );

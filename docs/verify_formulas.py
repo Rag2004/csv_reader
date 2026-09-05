@@ -39,7 +39,6 @@ def independent_overview(df: pd.DataFrame) -> dict:
     losses = df[df["pnl"] <= 0]
     win_trades = len(wins)
     loss_trades = len(losses)
-    win_rate = round(win_trades / total_trades * 100, 3) if total_trades else 0.0
     avg_win = round(float(wins["pnl"].mean()), 2) if win_trades else 0.0
     avg_loss = round(float(losses["pnl"].mean()), 2) if loss_trades else 0.0
 
@@ -48,6 +47,7 @@ def independent_overview(df: pd.DataFrame) -> dict:
     profit_days = int((daily > 0).sum())
     loss_days = int((daily < 0).sum())
     profit_days_pct = round(profit_days / total_days * 100, 2) if total_days else 0.0
+    win_rate = profit_days_pct
     avg_profit_on_profit_days = (
         round(float(daily[daily > 0].mean()), 2) if profit_days else 0.0
     )

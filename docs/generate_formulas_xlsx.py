@@ -48,10 +48,10 @@ FORMULAS = [
     ),
     (
         "F05",
-        "Win Rate (%)",
+        "Win Days (%)",
         "Core",
-        "(win_trades / total_trades) * 100",
-        "Percentage of winning trades.",
+        "(profit_days / total_days) * 100",
+        "Percentage of days with positive daily PnL.",
         "metrics.py ~90",
         "OK — rounded to 3 decimals",
     ),
@@ -376,7 +376,7 @@ TEST_STEPS = [
     (
         1,
         "Unit check with tiny CSV",
-        "Make a 5–10 trade CSV with known PnLs. Hand-calculate Total PnL, Win Rate, Profit Factor. Upload to http://localhost:5174 or http://<server>:8080 and compare Overview.",
+        "Make a 5–10 trade CSV with known PnLs. Hand-calculate Total PnL, Win Days %, Profit Factor. Upload to http://localhost:5174 or http://<server>:8080 and compare Overview.",
     ),
     (
         2,
@@ -420,7 +420,7 @@ HAND_EXPECTED = [
     ("Total Trades", 5, "count"),
     ("Win Trades", 2, "pnl>0 → trades 1,3"),
     ("Loss Trades", 3, "pnl<=0 → trades 2,4,5"),
-    ("Win Rate %", 40.0, "2/5*100"),
+    ("Win Days %", 40.0, "2 profit days / 5 days * 100"),
     ("Avg Win", 75.0, "(100+50)/2"),
     ("Avg Loss", -20.0, "(-40-20+0)/3"),
     ("Daily PnL days", "60, 50, -20, 0", "Jan2:60, Jan3:50, Jan4:-20, Jan5:0"),

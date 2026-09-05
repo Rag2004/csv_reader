@@ -45,7 +45,7 @@ Open http://localhost:5174 (Vite proxies `/api` to the backend; cookies work via
 
 - Smart case-insensitive CSV column mapping
 - Metrics computed once on upload and cached per browser cookie
-- Optional costs on upload: flat ₹ per-trade charge and slippage % of |PnL|
+- Optional costs on upload: flat ₹ per-trade charge and adverse entry/exit price slippage % (by side)
 - Pages: Upload, Overview, Equity, Monthly heatmap, Trades
 - Typed Pydantic API (`/api/meta`, `/api/overview`, `/api/equity`, `/api/monthly`, `/api/trades`)
 

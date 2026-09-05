@@ -2,10 +2,14 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import { fmtNumber } from '../utils/format';
 
@@ -23,7 +27,7 @@ function ChartTooltip({ active, payload, label }) {
     >
       <div style={{ marginBottom: 4, color: '#9a9aa3' }}>{label}</div>
       {payload.map((p) => (
-        <div key={p.dataKey} style={{ color: p.color }}>
+        <div key={p.dataKey} style={{ color: p.color || p.fill || '#e8e8ed' }}>
           {p.name}: {fmtNumber(p.value)}
         </div>
       ))}
@@ -92,6 +96,28 @@ export default function EquityChart({ points }) {
                 strokeWidth={2}
               />
             </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="panel">
+        <h2>Daily PnL</h2>
+        <div className="chart-wrap">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid stroke="#2a2a32" strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fill: '#9a9aa3', fontSize: 11 }} minTickGap={40} />
+              <YAxis tick={{ fill: '#9a9aa3', fontSize: 11 }} tickFormatter={(v) => fmtNumber(v, 0)} />
+              <Tooltip content={<ChartTooltip />} />
+              <ReferenceLine y={0} stroke="#5a5a66" />
+              <Bar dataKey="daily_pnl" name="Daily PnL">
+                {data.map((row) => (
+                  <Cell
+                    key={row.date}
+                    fill={row.daily_pnl >= 0 ? '#2ecc71' : '#e74c3c'}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>

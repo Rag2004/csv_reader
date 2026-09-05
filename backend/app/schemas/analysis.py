@@ -10,7 +10,7 @@ from .trades import NormalizedTrade
 
 class OverviewResponse(BaseModel):
     total_pnl: float
-    win_rate: float
+    win_rate: float  # win-days %: profit_days / total_days * 100
     calmar: float
     max_drawdown: float
     total_trades: int

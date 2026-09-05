@@ -43,7 +43,7 @@ export default function Overview({ hasSession }) {
           <div className={`value ${pnlClass(data.total_pnl)}`}>{fmtNumber(data.total_pnl)}</div>
         </div>
         <div className="kpi-pill">
-          <div className="label">Win rate</div>
+          <div className="label">Win days %</div>
           <div className="value">{fmtPct(data.win_rate)}</div>
         </div>
         <div className="kpi-pill">
@@ -90,7 +90,7 @@ export default function Overview({ hasSession }) {
             ['Sortino (monthly)', fmtNumber(data.sortino, 3)],
             ['Sharpe', fmtNumber(data.sharpe, 3)],
             ['Profit Factor', fmtNumber(data.profit_factor, 3)],
-            ['Win Rate', fmtPct(data.win_rate)],
+            ['Win Days %', fmtPct(data.win_rate)],
             ['Expectancy', fmtNumber(data.expectancy, 3)],
             ['Risk / Reward', fmtNumber(data.risk_reward, 3)],
           ]}
@@ -103,7 +103,6 @@ export default function Overview({ hasSession }) {
             ['Avg / Trade', fmtNumber(data.avg_pnl_per_trade)],
             ['Avg Profit Day', fmtNumber(data.avg_profit_on_profit_days)],
             ['Avg Loss Day', fmtNumber(data.avg_loss_on_loss_days)],
-            ['Profit Day %', fmtPct(data.profit_days_pct)],
             ['SQN', fmtNumber(data.sqn)],
           ]}
         />

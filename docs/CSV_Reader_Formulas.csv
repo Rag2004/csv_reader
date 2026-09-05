@@ -3,7 +3,7 @@ Total PnL,sum(pnl of all trades)
 Total Trades,count(trades)
 Win Trades,count(pnl > 0)
 Loss Trades,count(pnl <= 0)
-Win Rate (%),(win_trades / total_trades) * 100
+Win Days (%),(profit_days / total_days) * 100
 Avg Win,mean(pnl where pnl > 0)
 Avg Loss,mean(pnl where pnl <= 0)
 Avg PnL per Trade,total_pnl / total_trades
@@ -39,6 +39,6 @@ Sharpe,(mean_daily / std_dev) * sqrt(252)
 SQN,sqrt(N) * (avg_pnl_per_trade / std(trade_pnl ))
 Monthly heatmap cell,sum(pnl) for trades in that year+month
 Grand Total (monthly),total_pnl
-Per-trade charge,net_pnl = raw_pnl - charge_per_trade (flat Rs per closed trade; applied on upload)
-Slippage %,"net_pnl = pnl - |raw_pnl| * (slippage_pct / 100) (raw_pnl = CSV original; applied after charge)"
-Combined costs,"net_pnl = raw_pnl - charge_per_trade - |raw_pnl| * (slippage_pct / 100)"
+Per-trade charge,net_pnl = pnl - charge_per_trade (flat Rs per closed trade; applied on upload after slippage)
+Slippage %,"Buy: entry*(1+s) exit*(1-s); Sell: entry*(1-s) exit*(1+s); s=slippage_pct/100; slipped_pnl = side*(exit_slipped-entry_slipped)*qty; skip row if entry_price/exit_price/side/qty missing"
+Combined costs,"net_pnl = slipped_or_raw_pnl - charge_per_trade (slippage first, then flat charge)"

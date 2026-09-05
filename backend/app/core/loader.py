@@ -185,6 +185,14 @@ def load_csv_bytes(data: bytes, filename: str = "upload.csv") -> tuple[list[Norm
         if "quantity" in column_map:
             qty = _parse_number(row.get(column_map["quantity"]))
 
+        entry_price = None
+        if "entry_price" in column_map:
+            entry_price = _parse_number(row.get(column_map["entry_price"]))
+
+        exit_price = None
+        if "exit_price" in column_map:
+            exit_price = _parse_number(row.get(column_map["exit_price"]))
+
         side = None
         if "side" in column_map:
             side = _parse_side(row.get(column_map["side"]))
@@ -197,6 +205,8 @@ def load_csv_bytes(data: bytes, filename: str = "upload.csv") -> tuple[list[Norm
                 symbol=_opt_str("symbol"),
                 side=side,
                 quantity=qty,
+                entry_price=entry_price,
+                exit_price=exit_price,
                 exit_type=_opt_str("exit_type"),
                 strategy=_opt_str("strategy"),
                 extras=extras,
