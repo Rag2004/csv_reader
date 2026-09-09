@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from datetime import datetime
 from pathlib import Path
@@ -17,7 +18,7 @@ from app.core.cookies import (
 )
 from app.core.loader import CSVLoadError, load_csv_bytes, load_csv_path
 from app.core.metrics import compute_analysis
-from app.core.charges import apply_charge_per_trade
+from app.core.charges import apply_charges
 from app.core.slippage import apply_slippage_pct
 from app.core import session as session_store
 from app.schemas.responses import UploadResponse
@@ -107,10 +108,10 @@ class LoadPathRequest(BaseModel):
         le=100.0,
         description="Adverse % applied to entry/exit prices by side (0–100); skipped if prices/side/qty missing",
     )
-    charge_per_trade: float = Field(
-        0.0,
+    brokerage_per_order: float = Field(
+        10.0,
         ge=0.0,
-        description="Flat ₹ deducted from each trade's PnL",
+        description="Brokerage in ₹ per order; two orders are assumed per trade",
     )
 
 
@@ -128,13 +129,13 @@ def _validate_slippage_pct(slippage_pct: float) -> float:
     return float(slippage_pct)
 
 
-def _validate_charge_per_trade(charge_per_trade: float) -> float:
-    if charge_per_trade < 0:
+def _validate_brokerage_per_order(brokerage_per_order: float) -> float:
+    if not math.isfinite(brokerage_per_order) or brokerage_per_order < 0:
         raise HTTPException(
             status_code=400,
-            detail="charge_per_trade must be >= 0",
+            detail="brokerage_per_order must be a finite number >= 0",
         )
-    return float(charge_per_trade)
+    return float(brokerage_per_order)
 
 
 def _store_and_respond(
@@ -145,12 +146,12 @@ def _store_and_respond(
     headers: list[str],
     column_map: dict[str, str],
     slippage_pct: float = 0.0,
-    charge_per_trade: float = 0.0,
+    brokerage_per_order: float = 10.0,
 ) -> UploadResponse:
     session_id = resolve_or_create_session_id(request)
     try:
         adjusted = apply_slippage_pct(trades, slippage_pct)
-        adjusted = apply_charge_per_trade(adjusted, charge_per_trade)
+        adjusted = apply_charges(adjusted, brokerage_per_order)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     bundle = compute_analysis(
@@ -160,7 +161,7 @@ def _store_and_respond(
         column_map=column_map,
         loaded_at=datetime.utcnow(),
         slippage_pct=slippage_pct,
-        charge_per_trade=charge_per_trade,
+        brokerage_per_order=brokerage_per_order,
     )
     session_store.set_bundle(session_id, bundle)
     set_session_cookie(response, session_id)
@@ -173,13 +174,13 @@ async def upload_csv(
     response: Response,
     file: UploadFile = File(...),
     slippage_pct: float = Form(0.0),
-    charge_per_trade: float = Form(0.0),
+    brokerage_per_order: float = Form(10.0),
 ):
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file.")
 
     slippage_pct = _validate_slippage_pct(slippage_pct)
-    charge_per_trade = _validate_charge_per_trade(charge_per_trade)
+    brokerage_per_order = _validate_brokerage_per_order(brokerage_per_order)
 
     data = await file.read()
     if not data:
@@ -201,7 +202,7 @@ async def upload_csv(
         headers,
         column_map,
         slippage_pct=slippage_pct,
-        charge_per_trade=charge_per_trade,
+        brokerage_per_order=brokerage_per_order,
     )
 
 
@@ -266,7 +267,7 @@ async def load_path(
         headers,
         column_map,
         slippage_pct=body.slippage_pct,
-        charge_per_trade=body.charge_per_trade,
+        brokerage_per_order=body.brokerage_per_order,
     )
 
 

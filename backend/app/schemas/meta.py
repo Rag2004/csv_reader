@@ -16,4 +16,4 @@ class SessionMeta(BaseModel):
     column_map: dict[str, str] = Field(default_factory=dict)
     loaded_at: datetime
     slippage_pct: float = 0.0
-    charge_per_trade: float = 0.0
+    brokerage_per_order: float = 10.0

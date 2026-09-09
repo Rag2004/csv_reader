@@ -8,7 +8,7 @@ import {
 } from '../api/client';
 import { fmtInt, fmtNumber } from '../utils/format';
 
-export default function Upload({ meta, onLoaded, onCleared, slippagePct, chargePerTrade }) {
+export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokeragePerOrder }) {
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -28,11 +28,11 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, chargeP
     if (Number.isNaN(pct) || pct < 0 || pct > 100) {
       throw new Error('Slippage % must be between 0 and 100');
     }
-    const charge = Number(chargePerTrade);
-    if (Number.isNaN(charge) || charge < 0) {
-      throw new Error('Charge ₹ / trade must be 0 or greater');
+    const brokerage = Number(brokeragePerOrder);
+    if (!Number.isFinite(brokerage) || brokerage < 0) {
+      throw new Error('Brokerage ₹ / order must be 0 or greater');
     }
-    return { slippage_pct: pct, charge_per_trade: charge };
+    return { slippage_pct: pct, brokerage_per_order: brokerage };
   };
 
   const handleFile = useCallback(
@@ -53,7 +53,7 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, chargeP
         setBusy(false);
       }
     },
-    [onLoaded, slippagePct, chargePerTrade],
+    [onLoaded, slippagePct, brokeragePerOrder],
   );
 
   const handlePath = async (path) => {
@@ -180,8 +180,8 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, chargeP
             <dd>
               {displayMeta.start_date || '—'} → {displayMeta.end_date || '—'}
             </dd>
-            <dt>Charge ₹ / trade</dt>
-            <dd>{fmtNumber(displayMeta.charge_per_trade ?? 0, 2)}</dd>
+            <dt>Brokerage ₹ / order</dt>
+            <dd>{fmtNumber(displayMeta.brokerage_per_order ?? 10, 2)}</dd>
             <dt>Slippage %</dt>
             <dd>{fmtNumber(displayMeta.slippage_pct ?? 0, 1)}</dd>
           </dl>

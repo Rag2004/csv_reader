@@ -21,7 +21,7 @@ function AppShell() {
     setCostDefaults((prev) => {
       const normalized = {
         slippage_pct: Number(prev.slippage_pct) || 0,
-        charge_per_trade: Number(prev.charge_per_trade) || 0,
+        brokerage_per_order: Number(prev.brokerage_per_order) || 0,
       };
       saveCostDefaults(normalized);
       return normalized;
@@ -45,9 +45,9 @@ function AppShell() {
       <Sidebar
         meta={meta}
         slippagePct={costDefaults.slippage_pct}
-        chargePerTrade={costDefaults.charge_per_trade}
+        brokeragePerOrder={costDefaults.brokerage_per_order}
         onSlippageChange={(value) => updateCostDefaults({ slippage_pct: value })}
-        onChargeChange={(value) => updateCostDefaults({ charge_per_trade: value })}
+        onBrokerageChange={(value) => updateCostDefaults({ brokerage_per_order: value })}
         onPersistCosts={persistCostDefaults}
       />
       <main className="main">
@@ -59,7 +59,7 @@ function AppShell() {
               <Upload
                 meta={meta}
                 slippagePct={costDefaults.slippage_pct}
-                chargePerTrade={costDefaults.charge_per_trade}
+                brokeragePerOrder={costDefaults.brokerage_per_order}
                 onLoaded={(m) => setMeta(m)}
                 onCleared={() => setMeta(null)}
               />

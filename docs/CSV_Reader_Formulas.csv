@@ -39,6 +39,6 @@ Sharpe,(mean_daily / std_dev) * sqrt(252)
 SQN,sqrt(N) * (avg_pnl_per_trade / std(trade_pnl ))
 Monthly heatmap cell,sum(pnl) for trades in that year+month
 Grand Total (monthly),total_pnl
-Per-trade charge,net_pnl = pnl - charge_per_trade (flat Rs per closed trade; applied on upload after slippage)
+Per-trade F&O charges,"brokerage = 1.18 * 2 * brokerage_per_order; charges = brokerage + quantity * (0.00192043 * sell_price + 0.00045043 * buy_price); short uses entry as sell and exit as buy; long uses exit as sell and entry as buy; skip if prices/side/qty missing"
 Slippage %,"Buy: entry*(1+s) exit*(1-s); Sell: entry*(1-s) exit*(1+s); s=slippage_pct/100; slipped_pnl = side*(exit_slipped-entry_slipped)*qty; skip row if entry_price/exit_price/side/qty missing"
-Combined costs,"net_pnl = slipped_or_raw_pnl - charge_per_trade (slippage first, then flat charge)"
+Combined costs,"net_pnl = slipped_or_raw_pnl - charges (slippage first; charge rates use slipped prices when available)"

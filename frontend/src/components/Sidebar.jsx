@@ -4,9 +4,9 @@ import CostDefaults from './CostDefaults';
 export default function Sidebar({
   meta,
   slippagePct,
-  chargePerTrade,
+  brokeragePerOrder,
   onSlippageChange,
-  onChargeChange,
+  onBrokerageChange,
   onPersistCosts,
 }) {
   return (
@@ -32,9 +32,9 @@ export default function Sidebar({
       </nav>
       <CostDefaults
         slippagePct={slippagePct}
-        chargePerTrade={chargePerTrade}
+        brokeragePerOrder={brokeragePerOrder}
         onSlippageChange={onSlippageChange}
-        onChargeChange={onChargeChange}
+        onBrokerageChange={onBrokerageChange}
         onPersist={onPersistCosts}
       />
       <div className="session-chip">

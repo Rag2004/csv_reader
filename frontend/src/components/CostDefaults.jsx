@@ -1,8 +1,8 @@
 export default function CostDefaults({
   slippagePct,
-  chargePerTrade,
+  brokeragePerOrder,
   onSlippageChange,
-  onChargeChange,
+  onBrokerageChange,
   onPersist,
   disabled = false,
 }) {
@@ -10,13 +10,13 @@ export default function CostDefaults({
     <div className="cost-defaults">
       <div className="cost-defaults-title">Default costs</div>
       <label>
-        Charge ₹ / trade
+        Brokerage ₹ / order
         <input
           type="number"
           min={0}
           step={0.01}
-          value={chargePerTrade}
-          onChange={(e) => onChargeChange(e.target.value)}
+          value={brokeragePerOrder}
+          onChange={(e) => onBrokerageChange(e.target.value)}
           onBlur={onPersist}
           disabled={disabled}
         />
@@ -36,8 +36,8 @@ export default function CostDefaults({
       </label>
       <p className="cost-defaults-hint">
         Slippage worsens fills: buy entry +% / exit −%; sell entry −% / exit +%. Needs
-        entry/exit price, side, and qty (else skipped). Then flat charge. Saved on blur;
-        used on every upload / path load.
+        entry/exit price, side, and qty (else skipped). Charges use 1.18 × 2 × brokerage
+        plus side-aware transaction rates. Saved on blur; used on every upload / path load.
       </p>
     </div>
   );

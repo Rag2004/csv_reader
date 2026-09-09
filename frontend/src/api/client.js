@@ -22,11 +22,11 @@ export async function fetchMeta() {
   return res.json();
 }
 
-export async function uploadCsv(file, { slippage_pct = 0, charge_per_trade = 0 } = {}) {
+export async function uploadCsv(file, { slippage_pct = 0, brokerage_per_order = 10 } = {}) {
   const form = new FormData();
   form.append('file', file);
   form.append('slippage_pct', String(slippage_pct ?? 0));
-  form.append('charge_per_trade', String(charge_per_trade ?? 0));
+  form.append('brokerage_per_order', String(brokerage_per_order ?? 10));
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: 'POST',
     ...defaultFetch,
@@ -36,7 +36,7 @@ export async function uploadCsv(file, { slippage_pct = 0, charge_per_trade = 0 }
   return res.json();
 }
 
-export async function loadPath(path, { slippage_pct = 0, charge_per_trade = 0 } = {}) {
+export async function loadPath(path, { slippage_pct = 0, brokerage_per_order = 10 } = {}) {
   const res = await fetch(`${API_BASE}/api/load-path`, {
     method: 'POST',
     ...defaultFetch,
@@ -44,7 +44,7 @@ export async function loadPath(path, { slippage_pct = 0, charge_per_trade = 0 } 
     body: JSON.stringify({
       path,
       slippage_pct: Number(slippage_pct) || 0,
-      charge_per_trade: Number(charge_per_trade) || 0,
+      brokerage_per_order: Number(brokerage_per_order) || 0,
     }),
   });
   if (!res.ok) await parseError(res);
