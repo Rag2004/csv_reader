@@ -36,7 +36,8 @@ export default function CostDefaults({
       </label>
       <p className="cost-defaults-hint">
         Slippage worsens fills: buy entry +% / exit −%; sell entry −% / exit +%. Needs
-        entry/exit price, side, and qty (else skipped). Charges use 1.18 × 2 × brokerage
+        entry/exit price, side, and qty (else skipped). Brokerage 0 keeps raw PnL.
+        A positive brokerage also deducts STT and other charges: 1.18 × 2 × brokerage
         plus side-aware transaction rates. Saved on blur; used on every upload / path load.
       </p>
     </div>

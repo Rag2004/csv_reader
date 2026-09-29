@@ -1,10 +1,10 @@
-const STORAGE_KEY = 'csv_reader_cost_defaults';
+const STORAGE_KEY = 'csv_reader_cost_defaults_v2';
 
 export function loadCostDefaults() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return { slippage_pct: 0, brokerage_per_order: 10 };
+      return { slippage_pct: 0, brokerage_per_order: 0 };
     }
     const parsed = JSON.parse(raw);
     const slippage_pct = Number(parsed.slippage_pct);
@@ -14,10 +14,10 @@ export function loadCostDefaults() {
       brokerage_per_order:
         Number.isFinite(brokerage_per_order) && brokerage_per_order >= 0
           ? brokerage_per_order
-          : 10,
+          : 0,
     };
   } catch {
-    return { slippage_pct: 0, brokerage_per_order: 10 };
+    return { slippage_pct: 0, brokerage_per_order: 0 };
   }
 }
 

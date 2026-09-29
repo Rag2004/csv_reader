@@ -45,7 +45,7 @@ def compute_analysis(
     column_map: dict[str, str],
     loaded_at: datetime | None = None,
     slippage_pct: float = 0.0,
-    brokerage_per_order: float = 10.0,
+    brokerage_per_order: float = 0.0,
 ) -> AnalysisBundle:
     """Compute full analysis bundle once after upload."""
     loaded_at = loaded_at or datetime.utcnow()

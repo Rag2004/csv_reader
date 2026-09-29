@@ -109,9 +109,9 @@ class LoadPathRequest(BaseModel):
         description="Adverse % applied to entry/exit prices by side (0–100); skipped if prices/side/qty missing",
     )
     brokerage_per_order: float = Field(
-        10.0,
+        0.0,
         ge=0.0,
-        description="Brokerage in ₹ per order; two orders are assumed per trade",
+        description="Brokerage in ₹ per order. 0 keeps raw PnL. A positive value also deducts STT and other charges; two orders are assumed per trade",
     )
 
 
@@ -146,7 +146,7 @@ def _store_and_respond(
     headers: list[str],
     column_map: dict[str, str],
     slippage_pct: float = 0.0,
-    brokerage_per_order: float = 10.0,
+    brokerage_per_order: float = 0.0,
 ) -> UploadResponse:
     session_id = resolve_or_create_session_id(request)
     try:
@@ -174,7 +174,7 @@ async def upload_csv(
     response: Response,
     file: UploadFile = File(...),
     slippage_pct: float = Form(0.0),
-    brokerage_per_order: float = Form(10.0),
+    brokerage_per_order: float = Form(0.0),
 ):
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file.")

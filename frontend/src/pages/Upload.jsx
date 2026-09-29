@@ -181,7 +181,7 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
               {displayMeta.start_date || '—'} → {displayMeta.end_date || '—'}
             </dd>
             <dt>Brokerage ₹ / order</dt>
-            <dd>{fmtNumber(displayMeta.brokerage_per_order ?? 10, 2)}</dd>
+            <dd>{fmtNumber(displayMeta.brokerage_per_order ?? 0, 2)}</dd>
             <dt>Slippage %</dt>
             <dd>{fmtNumber(displayMeta.slippage_pct ?? 0, 1)}</dd>
           </dl>

@@ -29,6 +29,9 @@ def apply_charges(
 ) -> list[NormalizedTrade]:
     """Calculate side-aware F&O charges and subtract them from each trade.
 
+    Brokerage of 0 leaves PnL unchanged (no brokerage, STT, or other charges).
+    A positive brokerage applies both terms:
+
     charges = 1.18 * 2 * brokerage_per_order
               + quantity * (SELL_RATE * sell_price + BUY_RATE * buy_price)
 
@@ -37,6 +40,9 @@ def apply_charges(
     """
     if not math.isfinite(brokerage_per_order) or brokerage_per_order < 0:
         raise ValueError("brokerage_per_order must be a finite number >= 0")
+
+    if brokerage_per_order == 0:
+        return trades
 
     brokerage = GST_MULTIPLIER * N_ORDERS * float(brokerage_per_order)
     out: list[NormalizedTrade] = []
