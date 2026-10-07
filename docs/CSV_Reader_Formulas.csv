@@ -20,7 +20,7 @@ Profit Days %,(profit_days / total_days) * 100
 Avg Profit on Profit Days,mean(daily_pnl where daily_pnl > 0)
 Avg Loss on Loss Days,mean(daily_pnl where daily_pnl < 0)
 Equity Curve,cumsum(daily_pnl)
-Drawdown (series),equity - cummax(equity)
+Drawdown (series),equity - clip(cummax(equity), lower=0)
 Max Drawdown,min(drawdown series)
 Top-5 DD Avg,mean(5 most negative drawdown point values)
 Top-5 Loss Day Avg,mean(5 most negative daily_pnl values)

@@ -17,7 +17,7 @@ from app.schemas.analysis import (
     MonthlyYearRow,
     OverviewResponse,
 )
-from app.schemas.meta import SessionMeta
+from app.schemas.meta import SessionMeta, display_filename
 from app.schemas.trades import NormalizedTrade
 
 
@@ -46,13 +46,17 @@ def compute_analysis(
     loaded_at: datetime | None = None,
     slippage_pct: float = 0.0,
     brokerage_per_order: float = 0.0,
+    filenames: list[str] | None = None,
 ) -> AnalysisBundle:
     """Compute full analysis bundle once after upload."""
     loaded_at = loaded_at or datetime.utcnow()
+    file_list = list(filenames) if filenames else [filename]
+    label = display_filename(file_list) or filename
 
     if not trades:
         meta = SessionMeta(
-            filename=filename,
+            filename=label,
+            filenames=file_list,
             row_count=0,
             original_headers=original_headers,
             column_map=column_map,
@@ -111,7 +115,9 @@ def compute_analysis(
     )
 
     equity = daily.cumsum()
-    drawdown = equity - equity.cummax()
+    # Floor peak at 0 so opening losses from flat start count as drawdown
+    peak = equity.cummax().clip(lower=0)
+    drawdown = equity - peak
     max_drawdown = round(float(drawdown.min()), 2) if len(drawdown) else 0.0
 
     # Top-5 drawdown troughs (distinct local minima approximation: sorted unique DDs)
@@ -224,7 +230,8 @@ def compute_analysis(
     monthly = _build_monthly(df, total_pnl)
 
     meta = SessionMeta(
-        filename=filename,
+        filename=label,
+        filenames=file_list,
         row_count=len(trades),
         start_date=start_date,
         end_date=end_date,

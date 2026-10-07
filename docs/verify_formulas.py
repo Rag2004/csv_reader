@@ -56,7 +56,9 @@ def independent_overview(df: pd.DataFrame) -> dict:
     )
 
     equity = daily.cumsum()
-    drawdown = equity - equity.cummax()
+    # Floor peak at 0 so opening losses from flat start count as drawdown
+    peak = equity.cummax().clip(lower=0)
+    drawdown = equity - peak
     max_drawdown = round(float(drawdown.min()), 2) if len(drawdown) else 0.0
 
     dd_vals = sorted(float(x) for x in drawdown.values if x < 0)

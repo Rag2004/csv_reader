@@ -4,9 +4,16 @@ import {
   browseFiles,
   clearSession,
   loadPath,
+  loadPaths,
   uploadCsv,
 } from '../api/client';
 import { fmtInt, fmtNumber } from '../utils/format';
+
+function pickCsvFiles(fileList) {
+  return Array.from(fileList || []).filter((f) =>
+    (f.name || '').toLowerCase().endsWith('.csv'),
+  );
+}
 
 export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokeragePerOrder }) {
   const [dragOver, setDragOver] = useState(false);
@@ -15,6 +22,7 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
   const [success, setSuccess] = useState(null);
   const [browse, setBrowse] = useState(null);
   const [pathInput, setPathInput] = useState('');
+  const [selectedPaths, setSelectedPaths] = useState(() => new Set());
   const [lastUpload, setLastUpload] = useState(null);
 
   useEffect(() => {
@@ -35,18 +43,29 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
     return { slippage_pct: pct, brokerage_per_order: brokerage };
   };
 
-  const handleFile = useCallback(
-    async (file) => {
-      if (!file) return;
+  const applyLoaded = (data) => {
+    setLastUpload(data);
+    const n = data.meta.filenames?.length || 1;
+    setSuccess(
+      `Loaded ${n} file${n === 1 ? '' : 's'} (${data.meta.filename}) — ${data.meta.row_count} trades`,
+    );
+    onLoaded?.(data.meta);
+  };
+
+  const handleFiles = useCallback(
+    async (fileList) => {
+      const csvs = pickCsvFiles(fileList);
+      if (!csvs.length) {
+        setError('Please select at least one .csv file');
+        return;
+      }
       setBusy(true);
       setError(null);
       setSuccess(null);
       try {
         const costs = parseCosts();
-        const data = await uploadCsv(file, costs);
-        setLastUpload(data);
-        setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
-        onLoaded?.(data.meta);
+        const data = await uploadCsv(csvs, costs);
+        applyLoaded(data);
       } catch (e) {
         setError(e.message || String(e));
       } finally {
@@ -64,9 +83,7 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
     try {
       const costs = parseCosts();
       const data = await loadPath(path.trim(), costs);
-      setLastUpload(data);
-      setSuccess(`Loaded ${data.meta.filename} — ${data.meta.row_count} trades`);
-      onLoaded?.(data.meta);
+      applyLoaded(data);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -74,20 +91,55 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
     }
   };
 
+  const handleCombineSelected = async () => {
+    const paths = Array.from(selectedPaths);
+    if (!paths.length) {
+      setError('Select one or more files to combine');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const costs = parseCosts();
+      const data = await loadPaths(paths, costs);
+      applyLoaded(data);
+    } catch (e) {
+      setError(e.message || String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const togglePath = (path, e) => {
+    e.stopPropagation();
+    setSelectedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
   const handleClear = async () => {
     await clearSession();
     setLastUpload(null);
     setSuccess(null);
+    setSelectedPaths(new Set());
     onCleared?.();
   };
 
   const displayMeta = lastUpload?.meta || meta;
+  const fileCount = displayMeta?.filenames?.length || (displayMeta ? 1 : 0);
 
   return (
     <div>
       <div className="page-header">
         <h1>Upload</h1>
-        <p>Load a trades CSV. Column headers are matched case-insensitively.</p>
+        <p>
+          Load one or more trades CSVs. Multiple files are combined into one analysis
+          (same-day P&amp;L adds). Column headers are matched case-insensitively.
+        </p>
       </div>
 
       {error && <div className="error-box">{error}</div>}
@@ -105,8 +157,7 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
           onDrop={(e) => {
             e.preventDefault();
             setDragOver(false);
-            const f = e.dataTransfer.files?.[0];
-            handleFile(f);
+            handleFiles(e.dataTransfer.files);
           }}
           onClick={() => document.getElementById('csv-input')?.click()}
         >
@@ -114,13 +165,17 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
             id="csv-input"
             type="file"
             accept=".csv,text/csv"
-            onChange={(e) => handleFile(e.target.files?.[0])}
+            multiple
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = '';
+            }}
           />
           <p style={{ margin: 0, fontSize: '1rem' }}>
-            {busy ? 'Processing…' : 'Drop a CSV here or click to browse'}
+            {busy ? 'Processing…' : 'Drop one or more CSVs here or click to browse'}
           </p>
           <p style={{ margin: '0.5rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            Expects P&amp;L + entry/exit time (e.g. Quant Engine trades.csv)
+            Expects P&amp;L + entry/exit time (e.g. Quant Engine trades.csv). Trades are combined.
           </p>
         </div>
       </div>
@@ -139,6 +194,14 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
           <button className="btn btn-primary" disabled={busy} onClick={() => handlePath(pathInput)}>
             Load path
           </button>
+          <button
+            className="btn"
+            disabled={busy || selectedPaths.size === 0}
+            onClick={handleCombineSelected}
+            title="Combine checked files into one analysis"
+          >
+            Combine selected ({selectedPaths.size})
+          </button>
         </div>
         {browse?.files?.length ? (
           <div className="browse-list" style={{ marginTop: '0.75rem' }}>
@@ -151,9 +214,18 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
                   handlePath(f.path);
                 }}
               >
-                <span>
-                  <span className="folder">{f.folder}/</span>
-                  {f.name}
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedPaths.has(f.path)}
+                    onChange={(e) => togglePath(f.path, e)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Select ${f.name}`}
+                  />
+                  <span>
+                    <span className="folder">{f.folder}/</span>
+                    {f.name}
+                  </span>
                 </span>
                 <span style={{ color: 'var(--text-muted)' }}>
                   {(f.size / 1024).toFixed(1)} KB
@@ -174,6 +246,18 @@ export default function Upload({ meta, onLoaded, onCleared, slippagePct, brokera
           <dl className="meta-grid">
             <dt>Filename</dt>
             <dd>{displayMeta.filename}</dd>
+            {fileCount > 1 && (
+              <>
+                <dt>Files</dt>
+                <dd>
+                  <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                    {(displayMeta.filenames || []).map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                </dd>
+              </>
+            )}
             <dt>Rows</dt>
             <dd>{fmtInt(displayMeta.row_count)}</dd>
             <dt>Date range</dt>

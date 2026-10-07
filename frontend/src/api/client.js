@@ -22,9 +22,11 @@ export async function fetchMeta() {
   return res.json();
 }
 
-export async function uploadCsv(file, { slippage_pct = 0, brokerage_per_order = 0 } = {}) {
+export async function uploadCsv(files, { slippage_pct = 0, brokerage_per_order = 0 } = {}) {
+  const list = Array.isArray(files) ? files : files ? [files] : [];
+  if (!list.length) throw new Error('Please select at least one .csv file');
   const form = new FormData();
-  form.append('file', file);
+  list.forEach((f) => form.append('files', f));
   form.append('slippage_pct', String(slippage_pct ?? 0));
   form.append('brokerage_per_order', String(brokerage_per_order ?? 0));
   const res = await fetch(`${API_BASE}/api/upload`, {
@@ -43,6 +45,23 @@ export async function loadPath(path, { slippage_pct = 0, brokerage_per_order = 0
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       path,
+      slippage_pct: Number(slippage_pct) || 0,
+      brokerage_per_order: Number(brokerage_per_order) || 0,
+    }),
+  });
+  if (!res.ok) await parseError(res);
+  return res.json();
+}
+
+export async function loadPaths(paths, { slippage_pct = 0, brokerage_per_order = 0 } = {}) {
+  const list = Array.isArray(paths) ? paths.filter(Boolean) : [];
+  if (!list.length) throw new Error('Please select at least one path');
+  const res = await fetch(`${API_BASE}/api/load-paths`, {
+    method: 'POST',
+    ...defaultFetch,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      paths: list,
       slippage_pct: Number(slippage_pct) || 0,
       brokerage_per_order: Number(brokerage_per_order) || 0,
     }),

@@ -40,8 +40,13 @@ export default function Sidebar({
       <div className="session-chip">
         {meta ? (
           <>
-            <strong>{meta.filename}</strong>
+            <strong title={(meta.filenames || []).join('\n') || meta.filename}>
+              {meta.filename}
+            </strong>
             {meta.row_count.toLocaleString()} trades
+            {(meta.filenames?.length || 0) > 1 ? (
+              <div style={{ marginTop: 4 }}>{meta.filenames.length} files combined</div>
+            ) : null}
             {meta.start_date && meta.end_date ? (
               <div style={{ marginTop: 4 }}>
                 {meta.start_date} → {meta.end_date}
